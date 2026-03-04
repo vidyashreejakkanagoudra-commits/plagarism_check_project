@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlagiScan — PDF & Document Plagiarism Detector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="bg-blobs">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+    <div class="header-inner">
+        <div class="logo">
+            <div class="logo-icon-wrap">🔍</div>
+            <div>
+                <h1>PlagiScan</h1>
+                <p>PDF & Document Plagiarism Detector</p>
+            </div>
+        </div>
+        <div class="header-chips">
+            <span class="chip">🧠 AI-Powered</span>
+            <span class="chip">📄 PDF Support</span>
+            <span class="chip">🔤 Word-Level</span>
+        </div>
+    </div>
+</header>
+
+<main class="main">
+
+    <!-- UPLOAD CARD -->
+    <div class="card upload-card" id="uploadCard">
+        <div class="card-title">
+            <span class="card-title-icon">📂</span>
+            <div>
+                <h2>Upload Your Document</h2>
+                <p>Supports PDF, DOCX, TXT — one document at a time</p>
+            </div>
+        </div>
+
+        <!-- Drop Zone -->
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" accept=".pdf,.docx,.txt" style="display:none" onchange="onFileSelected(this)">
+            <div class="drop-icon" id="dropIcon">
+                <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+                    <rect width="56" height="56" rx="16" fill="rgba(139,92,246,0.15)"/>
+                    <path d="M28 36V20M20 28l8-8 8 8" stroke="#a78bfa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M18 40h20" stroke="#a78bfa" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <p class="drop-main">Drag & drop your file here</p>
+            <p class="drop-sub">or click to browse — PDF, DOCX, TXT up to 32MB</p>
+            <div id="fileChip" class="file-chip hidden">
+                <span id="fileChipName"></span>
+                <button onclick="removeFile(event)">✕</button>
+            </div>
+        </div>
+
+        <div class="or-divider"><span>OR paste text directly</span></div>
+
+        <textarea id="textInput" class="textarea" placeholder="Paste your document content here to check for plagiarism..."></textarea>
+
+        <div class="action-row">
+            <button class="btn-scan" id="scanBtn" onclick="startScan()">
+                <span>⚡</span> Scan for Plagiarism
+            </button>
+            <button class="btn-reset" onclick="resetAll()">🗑️ Reset</button>
+        </div>
+    </div>
+
+    <!-- LOADING -->
+    <div id="loadingState" class="loading-state hidden">
+        <div class="loading-card">
+            <div class="scan-animation">
+                <div class="scan-doc">📄</div>
+                <div class="scan-beam"></div>
+            </div>
+            <h3>Scanning Document...</h3>
+            <p>Analyzing words, phrases and patterns for plagiarism</p>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        </div>
+    </div>
+
+    <!-- ERROR -->
+    <div id="errorState" class="error-state hidden">
+        <span class="error-icon">⚠️</span>
+        <span id="errorMsg"></span>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="resultsSection" class="hidden">
+
+        <!-- File badge -->
+        <div class="file-badge-row">
+            <span class="file-badge">📄 <span id="resultFilename"></span></span>
+            <button class="btn-new-scan" onclick="resetAll()">+ Scan New Document</button>
+        </div>
+
+        <!-- VERDICT HERO -->
+        <div class="verdict-hero" id="verdictHero">
+            <div class="verdict-left">
+                <div class="verdict-emoji" id="verdictEmoji"></div>
+                <div>
+                    <div class="verdict-label" id="verdictLabel"></div>
+                    <div class="verdict-sub">Based on phrase repetition & word frequency analysis</div>
+                </div>
+            </div>
+            <div class="score-circle-wrap">
+                <svg class="score-ring" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="10"/>
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="url(#ringGrad)" stroke-width="10"
+                        stroke-linecap="round" stroke-dasharray="314"
+                        stroke-dashoffset="314" id="scoreRing"
+                        transform="rotate(-90 60 60)"/>
+                    <defs>
+                        <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#22c55e"/>
+                            <stop offset="50%" stop-color="#f59e0b"/>
+                            <stop offset="100%" stop-color="#ef4444"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="score-inside">
+                    <span class="score-num" id="scoreNum">0</span>
+                    <span class="score-pct">%</span>
+                    <span class="score-lbl">Plagiarism</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATS ROW -->
+        <div class="stats-row">
+            <div class="stat-tile">
+                <div class="stat-ico">📝</div>
+                <div class="stat-num" id="statTotal">-</div>
+                <div class="stat-lbl">Total Words</div>
+            </div>
+            <div class="stat-tile">
+                <div class="stat-ico">🔴</div>
+                <div class="stat-num red" id="statFlagged">-</div>
+                <div class="stat-lbl">Flagged Words</div>
+            </div>
+            <div class="stat-tile">
+                <div class="stat-ico">✅</div>
+                <div class="stat-num green" id="statClean">-</div>
+                <div class="stat-lbl">Clean Words</div>
+            </div>
+            <div class="stat-tile">
+                <div class="stat-ico">🔁</div>
+                <div class="stat-num orange" id="statPhrases">-</div>
+                <div class="stat-lbl">Repeated Phrases</div>
+            </div>
+        </div>
+
+        <!-- LEGEND -->
+        <div class="legend">
+            <div class="legend-item">
+                <span class="legend-swatch high"></span>
+                <span><strong>Red highlight</strong> — Repeated phrase (4+ words found multiple times)</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-swatch medium"></span>
+                <span><strong>Yellow highlight</strong> — Repeated word (appears 3+ times in document)</span>
+            </div>
+        </div>
+
+        <!-- HIGHLIGHTED DOCUMENT -->
+        <div class="card result-card">
+            <div class="result-card-header">
+                <h3>📝 Document with Plagiarism Highlights</h3>
+                <span class="result-card-sub">Hover over highlighted words to see details</span>
+            </div>
+            <div id="highlightedDoc" class="highlighted-doc"></div>
+        </div>
+
+        <!-- FLAGGED WORDS TABLE -->
+        <div class="card result-card" id="flaggedWordsCard">
+            <div class="result-card-header">
+                <h3>🔤 Flagged Words — Where Plagiarism Detected</h3>
+                <span class="result-card-sub">Every word flagged with its repetition count</span>
+            </div>
+            <div class="words-table-wrap">
+                <table class="words-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Word</th>
+                            <th>Risk Level</th>
+                            <th>Times Repeated</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="flaggedWordsBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SENTENCE ANALYSIS -->
+        <div class="card result-card" id="sentCard">
+            <div class="result-card-header">
+                <h3>📊 Sentence-Level Plagiarism Breakdown</h3>
+                <span class="result-card-sub">Each suspicious sentence with its plagiarism percentage</span>
+            </div>
+            <div id="sentenceList"></div>
+        </div>
+
+        <!-- REPEATED PHRASES -->
+        <div class="card result-card">
+            <div class="result-card-header">
+                <h3>🔁 Repeated Phrases Detected</h3>
+                <span class="result-card-sub">Phrases that appear multiple times — key plagiarism indicators</span>
+            </div>
+            <div id="phrasesList" class="phrases-wrap"></div>
+        </div>
+
+    </div>
+</main>
+
+<footer class="footer">
+    <p>PlagiScan © 2025 — Supports PDF, DOCX, TXT | Word-Level Plagiarism Detection</p>
+</footer>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
