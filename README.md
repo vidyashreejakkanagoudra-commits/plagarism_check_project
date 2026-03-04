@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🔍 PlagiScan — PDF & Document Plagiarism Detector
 
 Single-document plagiarism detector with word-level highlights.
@@ -26,3 +27,6 @@ py app.py
 - **Red**: 4-word phrases that appear more than once in the document
 - **Yellow**: Individual words that appear 3+ times (excluding common words)
 - **Score**: % of content words flagged as suspicious
+=======
+# plagiscan_project
+>>>>>>> 582ec3c9b670d2c6bc7abd64368266ac0aa415fd
