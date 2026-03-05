@@ -4,7 +4,15 @@ from utils.text_extractor import extract_text
 from utils.single_check import analyze_single_document
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
+
+# Use absolute path so it works regardless of working directory
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+
+# Create uploads folder at module level — runs whether using gunicorn or python app.py
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32MB
 
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'docx'}
@@ -47,10 +55,5 @@ def scan():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    os.makedirs('uploads', exist_ok=True)
-    import threading, webbrowser, time
-    def open_browser():
-        time.sleep(1.3)
-        webbrowser.open('http://127.0.0.1:5000')
-    threading.Thread(target=open_browser, daemon=True).start()
-    app.run(debug=False, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", debug=False, port=port)
